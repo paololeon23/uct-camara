@@ -66,12 +66,21 @@
             width: 100%;
             max-width: 640px;
         }
-        .scanner-btn {
+        /* Botones dentro de la cámara */
+        .camera-buttons {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .camera-buttons button {
+            margin: 10px;
+            font-size: 16px;
+            padding: 12px 20px;
         }
         /* Media query para pantallas pequeñas (celulares) */
         @media (max-width: 600px) {
@@ -92,20 +101,26 @@
 <body>
     <h1>Captura y Verifica tu Número</h1>
 
-    <!-- Contenedor del video y el botón de escaneo -->
+    <!-- Contenedor del video y botones dentro de la cámara -->
     <div class="scanner-container">
-        <!-- Botón para cambiar la cámara -->
-        <button onclick="toggleCamera()" class="scanner-btn">Cambiar Cámara</button>
-
         <!-- Elemento para mostrar el video -->
         <video id="video" width="640" height="480" autoplay></video>
+
+        <!-- Contenedor con los botones de la cámara -->
+        <div class="camera-buttons">
+            <!-- Botón para iniciar la cámara -->
+            <button onclick="startCamera()">Iniciar Cámara</button>
+            
+            <!-- Botón para cambiar la cámara -->
+            <button onclick="toggleCamera()">Cambiar Cámara</button>
+
+            <!-- Botón para capturar la imagen -->
+            <button onclick="captureImage()">Capturar Imagen</button>
+        </div>
     </div>
     
     <!-- Elemento para mostrar la imagen capturada -->
     <canvas id="canvas" width="640" height="480" style="display: none;"></canvas>
-    
-    <!-- Botón para capturar la imagen -->
-    <button onclick="captureImage()">Capturar Imagen</button>
     
     <h2>Resultado del OCR:</h2>
     <p id="ocrResult">Esperando captura...</p>
@@ -119,6 +134,9 @@
 
     <!-- Mensaje de error -->
     <p id="errorMessage" class="error" style="display:none;"></p>
+
+    <!-- Archivo de sonido para escaneo (agrega un archivo de sonido válido) -->
+    <audio id="scanSound" src="scan-sound.mp3" preload="auto"></audio> <!-- Cambia la ruta al archivo de sonido -->
 
     <script>
         let videoElement = document.getElementById('video');
@@ -185,6 +203,9 @@
                     // Almacenar el texto capturado en una variable
                     capturedNumber = text.trim();
                     localStorage.setItem('capturedNumber', capturedNumber);
+
+                    // Reproducir el sonido de escaneo
+                    document.getElementById('scanSound').play();
                 });
             } else {
                 errorMessageElement.textContent = "Por favor, inicia la cámara primero.";
@@ -213,9 +234,6 @@
                 alert("No se ha capturado ningún número.");
             }
         }
-
-        // Iniciar la cámara al cargar la página con la cámara frontal por defecto
-        startCamera(currentCamera);
     </script>
 </body>
 </html>
