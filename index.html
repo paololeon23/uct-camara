@@ -60,6 +60,19 @@
             font-size: 16px;
             color: #28a745;
         }
+        .scanner-container {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+            max-width: 640px;
+        }
+        .scanner-btn {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+        }
         /* Media query para pantallas pequeñas (celulares) */
         @media (max-width: 600px) {
             h1 {
@@ -79,11 +92,14 @@
 <body>
     <h1>Captura y Verifica tu Número</h1>
 
-    <!-- Botón para iniciar la cámara -->
-    <button onclick="startCamera()">Iniciar Cámara</button>
-    
-    <!-- Elemento para mostrar el video -->
-    <video id="video" width="640" height="480" autoplay></video>
+    <!-- Contenedor del video y el botón de escaneo -->
+    <div class="scanner-container">
+        <!-- Botón para cambiar la cámara -->
+        <button onclick="toggleCamera()" class="scanner-btn">Cambiar Cámara</button>
+
+        <!-- Elemento para mostrar el video -->
+        <video id="video" width="640" height="480" autoplay></video>
+    </div>
     
     <!-- Elemento para mostrar la imagen capturada -->
     <canvas id="canvas" width="640" height="480" style="display: none;"></canvas>
@@ -113,23 +129,41 @@
         let errorMessageElement = document.getElementById('errorMessage');
         let capturedNumber = "";
 
+        let currentStream = null; // Variable para almacenar el stream actual de la cámara
+        let currentCamera = 0; // 0 = cámara frontal, 1 = cámara trasera
+
         // Función para iniciar la cámara
-        function startCamera() {
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                navigator.mediaDevices.getUserMedia({ video: true })
-                    .then(function(stream) {
-                        videoElement.srcObject = stream;
-                        errorMessageElement.style.display = 'none'; // Ocultar mensaje de error
-                    })
-                    .catch(function(error) {
-                        console.log("Error al acceder a la cámara:", error);
-                        errorMessageElement.textContent = "No se ha podido acceder a la cámara. Asegúrate de permitir el acceso a la cámara en tu dispositivo.";
-                        errorMessageElement.style.display = 'block';
-                    });
-            } else {
-                errorMessageElement.textContent = "La cámara no está disponible en este navegador.";
-                errorMessageElement.style.display = 'block';
+        function startCamera(cameraType = 0) {
+            // Detener el stream si ya existe
+            if (currentStream) {
+                let tracks = currentStream.getTracks();
+                tracks.forEach(track => track.stop());
             }
+
+            const constraints = {
+                video: {
+                    facingMode: cameraType === 1 ? 'environment' : 'user' // 'user' es la cámara frontal, 'environment' es la trasera
+                }
+            };
+
+            // Solicitar el acceso a la cámara
+            navigator.mediaDevices.getUserMedia(constraints)
+                .then(function(stream) {
+                    videoElement.srcObject = stream;
+                    currentStream = stream;
+                    errorMessageElement.style.display = 'none'; // Ocultar mensaje de error
+                })
+                .catch(function(error) {
+                    console.log("Error al acceder a la cámara:", error);
+                    errorMessageElement.textContent = "No se ha podido acceder a la cámara. Asegúrate de permitir el acceso a la cámara en tu dispositivo.";
+                    errorMessageElement.style.display = 'block';
+                });
+        }
+
+        // Función para alternar entre cámaras (frontal y trasera)
+        function toggleCamera() {
+            currentCamera = currentCamera === 0 ? 1 : 0; // Cambiar entre la cámara frontal y trasera
+            startCamera(currentCamera);
         }
 
         // Función para capturar la imagen
@@ -179,6 +213,9 @@
                 alert("No se ha capturado ningún número.");
             }
         }
+
+        // Iniciar la cámara al cargar la página con la cámara frontal por defecto
+        startCamera(currentCamera);
     </script>
 </body>
 </html>
