@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Captura y OCR</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.1/dist/tesseract.min.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        button {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #video {
+            border: 2px solid #333;
+        }
+        #ocrResult {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #333;
+        }
+        #capturedNumber {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <h1>Captura y Verifica tu Número</h1>
+
+    <!-- Botón para iniciar la cámara -->
+    <button onclick="startCamera()">Iniciar Cámara</button>
+    
+    <!-- Elemento para mostrar el video -->
+    <video id="video" width="640" height="480" autoplay></video>
+    
+    <!-- Elemento para mostrar la imagen capturada -->
+    <canvas id="canvas" width="640" height="480" style="display: none;"></canvas>
+    
+    <!-- Botón para capturar la imagen -->
+    <button onclick="captureImage()">Capturar Imagen</button>
+    
+    <h2>Resultado del OCR:</h2>
+    <p id="ocrResult">Esperando captura...</p>
+    
+    <!-- Mostrar el número capturado y almacenado -->
+    <button onclick="showCapturedNumber()">Mostrar Número Capturado</button>
+    <p id="capturedNumber">Número no capturado aún.</p>
+
+    <!-- Botón para enviar el número a WhatsApp -->
+    <button onclick="sendToWhatsApp()">Enviar a WhatsApp</button>
+
+    <script>
+        let videoElement = document.getElementById('video');
+        let canvasElement = document.getElementById('canvas');
+        let context = canvasElement.getContext('2d');
+        let ocrResultElement = document.getElementById('ocrResult');
+        let capturedNumberElement = document.getElementById('capturedNumber');
+        let capturedNumber = "";
+
+        // Función para iniciar la cámara
+        function startCamera() {
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ video: true })
+                    .then(function(stream) {
+                        videoElement.srcObject = stream;
+                    })
+                    .catch(function(error) {
+                        console.log("Error al acceder a la cámara:", error);
+                    });
+            } else {
+                alert("La cámara no está disponible.");
+            }
+        }
+
+        // Función para capturar la imagen
+        function captureImage() {
+            context.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
+            
+            // Usar Tesseract.js para realizar OCR en la imagen capturada
+            Tesseract.recognize(
+                canvasElement,
+                'eng', // Cambia este idioma si es necesario
+                {
+                    logger: (m) => console.log(m) // Mostrar el progreso del OCR
+                }
+            ).then(({ data: { text } }) => {
+                console.log(text);
+                ocrResultElement.textContent = text;
+
+                // Almacenar el texto capturado en una variable
+                capturedNumber = text;
+                localStorage.setItem('capturedNumber', capturedNumber);
+            });
+        }
+
+        // Función para mostrar el número capturado
+        function showCapturedNumber() {
+            let capturedNumber = localStorage.getItem('capturedNumber');
+            if (capturedNumber) {
+                capturedNumberElement.textContent = "Número Capturado: " + capturedNumber;
+            } else {
+                capturedNumberElement.textContent = "No se ha capturado ningún número.";
+            }
+        }
+
+        // Función para enviar el número capturado a WhatsApp
+        function sendToWhatsApp() {
+            if (capturedNumber) {
+                const encodedMessage = encodeURIComponent(capturedNumber);
+                const phoneNumber = "913420257";
+                const url = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+                window.open(url, '_blank');
+            } else {
+                alert("No se ha capturado ningún número.");
+            }
+        }
+    </script>
+</body>
+</html>
