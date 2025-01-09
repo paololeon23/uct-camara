@@ -4,17 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Captura y OCR</title>
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.1/dist/tesseract.min.js"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.1/dist/tesseract.min.js"></script> <!-- Cargar la librería OCR -->
     <style>
+        /* Estilos generales */
         body {
             font-family: Arial, sans-serif;
             text-align: center;
             background-color: #f4f4f4;
             padding: 20px;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
         }
         h1 {
             color: #333;
+            font-size: 24px;
+            margin-bottom: 20px;
         }
         button {
             background-color: #007BFF;
@@ -24,22 +32,47 @@
             font-size: 16px;
             cursor: pointer;
             margin: 10px;
+            border-radius: 5px;
+            width: 100%;
+            max-width: 300px;
         }
         button:hover {
             background-color: #0056b3;
         }
         #video {
             border: 2px solid #333;
+            margin-top: 20px;
+            max-width: 100%;
+            height: auto;
         }
-        #ocrResult {
+        #ocrResult, #capturedNumber {
             margin-top: 20px;
             font-size: 18px;
             color: #333;
+            word-wrap: break-word;
         }
-        #capturedNumber {
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .message {
             margin-top: 20px;
-            font-size: 18px;
+            font-size: 16px;
             color: #28a745;
+        }
+        /* Media query para pantallas pequeñas (celulares) */
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 20px;
+            }
+            button {
+                font-size: 14px;
+                padding: 8px 16px;
+            }
+            #video {
+                width: 100%;
+                height: auto;
+            }
         }
     </style>
 </head>
@@ -68,12 +101,16 @@
     <!-- Botón para enviar el número a WhatsApp -->
     <button onclick="sendToWhatsApp()">Enviar a WhatsApp</button>
 
+    <!-- Mensaje de error -->
+    <p id="errorMessage" class="error" style="display:none;"></p>
+
     <script>
         let videoElement = document.getElementById('video');
         let canvasElement = document.getElementById('canvas');
         let context = canvasElement.getContext('2d');
         let ocrResultElement = document.getElementById('ocrResult');
         let capturedNumberElement = document.getElementById('capturedNumber');
+        let errorMessageElement = document.getElementById('errorMessage');
         let capturedNumber = "";
 
         // Función para iniciar la cámara
@@ -82,34 +119,43 @@
                 navigator.mediaDevices.getUserMedia({ video: true })
                     .then(function(stream) {
                         videoElement.srcObject = stream;
+                        errorMessageElement.style.display = 'none'; // Ocultar mensaje de error
                     })
                     .catch(function(error) {
                         console.log("Error al acceder a la cámara:", error);
+                        errorMessageElement.textContent = "No se ha podido acceder a la cámara. Asegúrate de permitir el acceso a la cámara en tu dispositivo.";
+                        errorMessageElement.style.display = 'block';
                     });
             } else {
-                alert("La cámara no está disponible.");
+                errorMessageElement.textContent = "La cámara no está disponible en este navegador.";
+                errorMessageElement.style.display = 'block';
             }
         }
 
         // Función para capturar la imagen
         function captureImage() {
-            context.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
-            
-            // Usar Tesseract.js para realizar OCR en la imagen capturada
-            Tesseract.recognize(
-                canvasElement,
-                'eng', // Cambia este idioma si es necesario
-                {
-                    logger: (m) => console.log(m) // Mostrar el progreso del OCR
-                }
-            ).then(({ data: { text } }) => {
-                console.log(text);
-                ocrResultElement.textContent = text;
+            if (videoElement.srcObject) {
+                context.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
+                
+                // Usar Tesseract.js para realizar OCR en la imagen capturada
+                Tesseract.recognize(
+                    canvasElement,
+                    'eng', // Cambia este idioma si es necesario
+                    {
+                        logger: (m) => console.log(m) // Mostrar el progreso del OCR
+                    }
+                ).then(({ data: { text } }) => {
+                    console.log(text);
+                    ocrResultElement.textContent = text;
 
-                // Almacenar el texto capturado en una variable
-                capturedNumber = text;
-                localStorage.setItem('capturedNumber', capturedNumber);
-            });
+                    // Almacenar el texto capturado en una variable
+                    capturedNumber = text.trim();
+                    localStorage.setItem('capturedNumber', capturedNumber);
+                });
+            } else {
+                errorMessageElement.textContent = "Por favor, inicia la cámara primero.";
+                errorMessageElement.style.display = 'block';
+            }
         }
 
         // Función para mostrar el número capturado
